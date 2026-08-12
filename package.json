@@ -1,38 +1,26 @@
 {
-  "name": "xml-checker-app",
-  "productName": "XML单位检查工具",
+  "name": "xml-unit-checker",
   "version": "1.0.0",
-  "description": "XML手册单位批量检查工具",
+  "description": "XML 手册公英制单位批量检查工具",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "build-win": "electron-builder --win --x64 --publish=never",
-    "build-mac": "electron-builder --mac --x64 --arm64 --publish=never"
+    "build:win": "electron-builder --win",
+    "build:mac": "electron-builder --mac"
   },
   "dependencies": {
     "@xmldom/xmldom": "^0.8.10"
   },
   "devDependencies": {
-    "electron": "^28.0.0",
-    "electron-builder": "^24.9.1"
+    "electron": "^31.0.0",
+    "electron-builder": "^24.13.3"
   },
   "build": {
-    "appId": "com.company.xmlchecker",
+    "appId": "com.yourname.xmlunitchecker",
     "productName": "XML单位检查工具",
-    "publish": null,
-    "win": {
-      "target": "portable"
-    },
-    "mac": {
-      "target": "dmg",
-      "category": "public.app-category.utilities"
-    },
-    "files": [
-      "index.html",
-      "main.js",
-      "preload.js",
-      "checker.js",
-      "node_modules/@xmldom/**"
-    ]
+    "files": ["main.js", "preload.js", "index.html", "checker.js", "node_modules/**/*"],
+    "directories": { "output": "dist" },
+    "win": { "target": "nsis" },
+    "mac": { "target": "dmg", "category": "public.app-category.utilities" }
   }
 }
