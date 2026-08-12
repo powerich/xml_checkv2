@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>XML 手册单位批量检查工具</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif;
+    margin: 0;
+    padding: 30px;
+    background: #f5f6f8;
+    color: #222;
+  }
+  h1 { font-size: 20px; margin-bottom: 4px; }
+  .subtitle { color: #666; font-size: 13px; margin-bottom: 24px; }
+
+  .card {
+    background: #fff;
+    border-radius: 10px;
+    padding: 20px 24px;
+    margin-bottom: 16px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+
+  .path-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+  .path-box {
+    flex: 1;
+    padding: 8px 12px;
+    background: #f0f1f3;
+    border-radius: 6px;
+    font-size: 13px;
+    color: #555;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .badge {
+    font-size: 12px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    background: #e8ecf7;
+    color: #3654a6;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  button {
+    border: none;
+    border-radius: 6px;
+    padding: 8px 16px;
+    font-size: 13px;
+    cursor: pointer;
+    background: #eee;
+    color: #333;
+  }
+  button:hover { background: #e0e0e0; }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .btn-row { display: flex; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
+
+  .btn-primary {
+    background: #3654a6;
+    color: #fff;
+    padding: 10px 20px;
+    font-size: 14px;
+  }
+  .btn-primary:hover { background: #2c458a; }
+
+  .hint { font-size: 12px; color: #888; margin-top: 4px; line-height: 1.6; }
+
+  #progressWrap { display: none; margin-top: 16px; }
+  #progressBarOuter {
+    background: #e5e7eb;
+    border-radius: 6px;
+    height: 8px;
+    overflow: hidden;
+  }
+  #progressBarInner {
+    background: #3654a6;
+    height: 100%;
+    width: 0%;
+    transition: width 0.2s;
+  }
+  #progressText { font-size: 12px; color: #666; margin-top: 6px; }
+
+  #resultCard { display: none; }
+  #resultCard h2 { font-size: 16px; margin: 0 0 14px 0; color: #1a7f37; }
+
+  .stat-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  .stat-box {
+    background: #f8f9fb;
+    border-radius: 8px;
+    padding: 12px;
+    text-align: center;
+  }
+  .stat-num { font-size: 22px; font-weight: 600; }
+  .stat-label { font-size: 12px; color: #777; margin-top: 2px; }
+  .stat-ok .stat-num { color: #1a7f37; }
+  .stat-warn .stat-num { color: #b8860b; }
+  .stat-err .stat-num { color: #c0392b; }
+
+  .elapsed { font-size: 12px; color: #999; margin-bottom: 12px; }
+
+  #errorBox {
+    display: none;
+    background: #fdecea;
+    color: #c0392b;
+    padding: 10px 14px;
+    border-radius: 6px;
+    font-size: 13px;
+    margin-top: 12px;
+  }
+</style>
+</head>
+<body>
+
+  <h1>✈️ XML 手册单位批量检查工具</h1>
+  <div class="subtitle">检查公英制单位换算、制式一致性与符号规范</div>
+
+  <div class="card">
+    <div class="path-row">
+      <span id="pathBadge" class="badge" style="display:none;"></span>
+      <div class="path-box" id="pathBox">尚未选择文件夹或文件</div>
+    </div>
+
+    <div class="btn-row">
+      <button id="btnSelectFolder">📁 选择文件夹（批量检查）</button>
+      <button id="btnSelectFile">📄 选择单个文件</button>
+      <button id="btnStart" class="btn-primary" disabled>开始检查</button>
+    </div>
+
+    <div class="hint">
+      选择文件夹：自动递归查找其中所有 .xml 文件并批量检查；<br>
+      选择单个文件：仅检查该文件。检查完成后结果 CSV 会自动保存在原文件（或文件夹）所在目录内。
+    </div>
+
+    <div id="progressWrap">
+      <div id="progressBarOuter"><div id="progressBarInner"></div></div>
+      <div id="progressText">准备中...</div>
+    </div>
+
+    <div id="errorBox"></div>
+  </div>
+
+  <div class="card" id="resultCard">
+    <h2>✅ 检查完成</h2>
+    <div class="elapsed" id="elapsedText"></div>
+    <div class="stat-grid">
+      <div class="stat-box"><div class="stat-num" id="statFiles">0</div><div class="stat-label">检查文件数</div></div>
+      <div class="stat-box stat-ok"><div class="stat-num" id="statOk">0</div><div class="stat-label">正确</div></div>
+      <div class="stat-box stat-warn"><div class="stat-num" id="statWarn">0</div><div class="stat-label">建议</div></div>
+      <div class="stat-box stat-err"><div class="stat-num" id="statErr">0</div><div class="stat-label">错误</div></div>
+      <div class="stat-box"><div class="stat-num" id="statUnpaired">0</div><div class="stat-label">未配对</div></div>
+    </div>
+    <div class="btn-row">
+      <button id="btnOpenFolder">打开结果文件夹</button>
+      <button id="btnReset">重新选择</button>
+    </div>
+  </div>
+
+<script>
+  let selectedPath = null;
+  let selectedIsFolder = false;
+  let lastResultFolder = null;
+
+  const pathBox = document.getElementById("pathBox");
+  const pathBadge = document.getElementById("pathBadge");
+  const btnStart = document.getElementById("btnStart");
+  const progressWrap = document.getElementById("progressWrap");
+  const progressBarInner = document.getElementById("progressBarInner");
+  const progressText = document.getElementById("progressText");
+  const resultCard = document.getElementById("resultCard");
+  const errorBox = document.getElementById("errorBox");
+  const elapsedText = document.getElementById("elapsedText");
+
+  function setSelected(p, isFolder) {
+    selectedPath = p;
+    selectedIsFolder = isFolder;
+    if (p) {
+      pathBox.textContent = p;
+      pathBox.title = p;
+      pathBadge.style.display = "inline-block";
+      pathBadge.textContent = isFolder ? "文件夹" : "单个文件";
+      btnStart.disabled = false;
+    } else {
+      pathBox.textContent = "尚未选择文件夹或文件";
+      pathBox.title = "";
+      pathBadge.style.display = "none";
+      btnStart.disabled = true;
+    }
+    resultCard.style.display = "none";
+    errorBox.style.display = "none";
+  }
+
+  document.getElementById("btnSelectFolder").addEventListener("click", async () => {
+    const p = await window.api.selectFolder();
+    if (p) setSelected(p, true);
+  });
+
+  document.getElementById("btnSelectFile").addEventListener("click", async () => {
+    const p = await window.api.selectFile();
+    if (p) setSelected(p, false);
+  });
+
+  document.getElementById("btnStart").addEventListener("click", async () => {
+    if (!selectedPath) return;
+
+    btnStart.disabled = true;
+    resultCard.style.display = "none";
+    errorBox.style.display = "none";
+    progressWrap.style.display = "block";
+    progressBarInner.style.width = "0%";
+    progressText.textContent = "准备中...";
+
+    const res = await window.api.startCheck(selectedPath);
+
+    progressWrap.style.display = "none";
+    btnStart.disabled = false;
+
+    if (!res.success) {
+      errorBox.style.display = "block";
+      errorBox.textContent = "❌ 检查失败：" + res.error;
+      return;
+    }
+
+    const s = res.summary;
+    document.getElementById("statFiles").textContent = s.totalFiles;
+    document.getElementById("statOk").textContent = s.totalOk;
+    document.getElementById("statWarn").textContent = s.totalWarn;
+    document.getElementById("statErr").textContent = s.totalErr;
+    document.getElementById("statUnpaired").textContent = s.totalUnpaired;
+    elapsedText.textContent = "用时 " + s.elapsedSeconds + " 秒" +
+      (s.isSingleFile ? "（单文件检查）" : "（批量检查）") +
+      (s.failedCount > 0 ? "，其中 " + s.failedCount + " 个文件解析异常" : "");
+    resultCard.style.display = "block";
+
+    lastResultFolder = s.targetFolder;
+  });
+
+  document.getElementById("btnOpenFolder").addEventListener("click", () => {
+    if (lastResultFolder) window.api.openFolder(lastResultFolder);
+  });
+
+  document.getElementById("btnReset").addEventListener("click", () => {
+    setSelected(null, false);
+  });
+
+  window.api.onProgress(({ current, total }) => {
+    const pct = total > 0 ? Math.round((current / total) * 100) : 0;
+    progressBarInner.style.width = pct + "%";
+    progressText.textContent = "已处理 " + current + " / " + total + " 个文件（" + pct + "%）";
+  });
+</script>
+</body>
+</html>

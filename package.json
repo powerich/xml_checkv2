@@ -1,0 +1,38 @@
+{
+  "name": "xml-checker-app",
+  "productName": "XML单位检查工具",
+  "version": "1.0.0",
+  "description": "XML手册单位批量检查工具",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build-win": "electron-builder --win --x64 --publish=never",
+    "build-mac": "electron-builder --mac --x64 --arm64 --publish=never"
+  },
+  "dependencies": {
+    "@xmldom/xmldom": "^0.8.10"
+  },
+  "devDependencies": {
+    "electron": "^28.0.0",
+    "electron-builder": "^24.9.1"
+  },
+  "build": {
+    "appId": "com.company.xmlchecker",
+    "productName": "XML单位检查工具",
+    "publish": null,
+    "win": {
+      "target": "portable"
+    },
+    "mac": {
+      "target": "dmg",
+      "category": "public.app-category.utilities"
+    },
+    "files": [
+      "index.html",
+      "main.js",
+      "preload.js",
+      "checker.js",
+      "node_modules/@xmldom/**"
+    ]
+  }
+}
